@@ -356,14 +356,21 @@ public class RequestHandler {
         // Screenshots must be taken on the render thread
         MinecraftClient client = MinecraftClient.getInstance();
         client.execute(() -> {
+            java.nio.file.Path tmp = null;
             try {
                 var nativeImage = ScreenshotRecorder.takeScreenshot(client.getFramebuffer());
-                byte[] bytes = nativeImage.getBytes();
+                tmp = java.nio.file.Files.createTempFile("mcp-screenshot", ".png");
+                nativeImage.writeTo(tmp);
                 nativeImage.close();
+                byte[] bytes = java.nio.file.Files.readAllBytes(tmp);
                 String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
                 future.complete(base64);
             } catch (Exception e) {
                 future.completeExceptionally(e);
+            } finally {
+                if (tmp != null) {
+                    try { java.nio.file.Files.deleteIfExists(tmp); } catch (Exception ignored) {}
+                }
             }
         });
 
