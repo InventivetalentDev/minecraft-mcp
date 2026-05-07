@@ -120,4 +120,10 @@ public class CapturingCommandSender implements CommandSender {
 
     @Override
     public void setOp(boolean value) {}
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public CommandSender.@NotNull Spigot spigot() {
+        return new CommandSender.Spigot();
+    }
 }
