@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "minecraft-paper": {
+      "command": "tsx",
+      "args": ["./packages/mcp-server-paper/src/index.ts"],
+      "env": {
+        "PAPER_WS_URL": "ws://localhost:25575"
+      }
+    },
+    "minecraft-fabric": {
+      "command": "tsx",
+      "args": ["./packages/mcp-server-fabric/src/index.ts"],
+      "env": {
+        "FABRIC_WS_URL": "ws://localhost:25576"
+      }
+    }
+  }
+}

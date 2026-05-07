@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Gradle
+.gradle/
+build/
+out/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets / local config
+*.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "minecraft-mcp",
+  "version": "${version}",
+  "name": "Minecraft MCP",
+  "description": "MCP server bridge for AI-assisted Minecraft plugin/mod development",
+  "authors": ["InventiveTalent"],
+  "contact": {
+    "sources": "https://github.com/inventivetalentdev/minecraft-mcp"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.inventivetalent.mcp.fabric.McpMod"]
+  },
+  "mixins": ["mcp.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api":   "*",
+    "minecraft":    "~${minecraft_version}"
+  }
+}

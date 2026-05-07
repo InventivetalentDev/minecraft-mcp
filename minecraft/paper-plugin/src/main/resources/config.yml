@@ -1,0 +1,30 @@
+# Minecraft MCP - Paper Plugin Configuration
+
+websocket:
+  # Host/port the WebSocket server listens on.
+  # The MCP server (Node.js) connects to this.
+  host: "0.0.0.0"
+  port: 25575
+
+reflection:
+  # Packages the reflection tools are allowed to access.
+  # Use '*' as a suffix wildcard, e.g. "org.bukkit.*"
+  allowed-packages:
+    - "org.bukkit.*"
+    - "io.papermc.*"
+    - "net.kyori.adventure.*"
+    - "org.spigotmc.*"
+    - "net.minecraft.*"
+    - "com.google.gson.*"
+    - "java.util.*"
+    - "java.lang.*"
+
+  # Classes/packages explicitly blocked even if covered by an allowed pattern.
+  # Supports exact class names or package wildcards.
+  blocked-packages:
+    - "java.lang.Runtime"
+    - "java.lang.ProcessBuilder"
+    - "java.io.File"      # block raw file access; use the dedicated tools instead
+
+  # Maximum number of object references held in the registry per session.
+  max-object-refs: 1000

@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "dev.inventivetalent.mcp.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ChatHudMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
