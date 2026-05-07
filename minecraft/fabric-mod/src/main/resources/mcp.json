@@ -1,0 +1,21 @@
+{
+  "_comment": "Minecraft MCP Fabric mod configuration. Stored in .minecraft/config/mcp.json",
+  "websocket": {
+    "host": "127.0.0.1",
+    "port": 25576
+  },
+  "reflection": {
+    "allowedPackages": [
+      "net.minecraft.*",
+      "com.mojang.*",
+      "net.fabricmc.*",
+      "java.util.*",
+      "java.lang.*"
+    ],
+    "blockedPackages": [
+      "java.lang.Runtime",
+      "java.lang.ProcessBuilder"
+    ],
+    "maxObjectRefs": 1000
+  }
+}

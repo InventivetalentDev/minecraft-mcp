@@ -1,0 +1,11 @@
+{
+  "name": "minecraft-mcp",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:paper": "npm run dev --workspace=packages/mcp-server-paper",
+    "dev:fabric": "npm run dev --workspace=packages/mcp-server-fabric"
+  }
+}

@@ -1,0 +1,15 @@
+name: MinecraftMcp
+version: "${version}"
+main: dev.inventivetalent.mcp.paper.McpPlugin
+api-version: "1.21"
+description: "MCP server bridge for AI-assisted Minecraft plugin development"
+authors: [InventiveTalent]
+commands:
+  mcp:
+    description: "Manage the MCP WebSocket bridge"
+    usage: "/mcp <status|reload>"
+    permission: mcp.admin
+permissions:
+  mcp.admin:
+    description: "Manage the MCP bridge"
+    default: op
