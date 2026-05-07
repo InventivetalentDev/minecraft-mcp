@@ -3,7 +3,6 @@ package dev.inventivetalent.mcp.fabric;
 import com.google.gson.*;
 import dev.inventivetalent.mcp.fabric.handler.RequestHandler;
 import dev.inventivetalent.mcp.fabric.util.PackageFilter;
-import net.minecraft.client.MinecraftClient;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;

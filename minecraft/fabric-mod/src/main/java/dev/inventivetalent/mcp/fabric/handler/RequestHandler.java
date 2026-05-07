@@ -5,17 +5,20 @@ import dev.inventivetalent.mcp.fabric.ChatStorage;
 import dev.inventivetalent.mcp.fabric.util.ObjectRegistry;
 import dev.inventivetalent.mcp.fabric.util.PackageFilter;
 import dev.inventivetalent.mcp.fabric.util.Serializer;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.client.util.ScreenshotRecorder;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.*;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -95,14 +98,14 @@ public class RequestHandler {
     private JsonElement handleChatSend(JsonObject p) throws Exception {
         String message = p.get("message").getAsString();
         CompletableFuture<Void> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                LocalPlayer player = Minecraft.getInstance().player;
                 if (player == null) throw new IllegalStateException("Not in a world");
                 if (message.startsWith("/")) {
-                    player.networkHandler.sendChatCommand(message.substring(1));
+                    player.connection.sendCommand(message.substring(1));
                 } else {
-                    player.networkHandler.sendChatMessage(message);
+                    player.connection.sendChat(message);
                 }
                 future.complete(null);
             } catch (Exception e) {
@@ -117,36 +120,37 @@ public class RequestHandler {
 
     private JsonElement handlePlayerGetState() throws Exception {
         CompletableFuture<JsonElement> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                ClientPlayerEntity p = MinecraftClient.getInstance().player;
+                LocalPlayer p = Minecraft.getInstance().player;
                 if (p == null) throw new IllegalStateException("Not in a world");
 
                 JsonObject out = new JsonObject();
                 out.addProperty("name", p.getName().getString());
-                out.addProperty("uuid", p.getUuidAsString());
+                out.addProperty("uuid", p.getStringUUID());
                 out.addProperty("health", p.getHealth());
                 out.addProperty("maxHealth", p.getMaxHealth());
-                out.addProperty("hunger", p.getHungerManager().getFoodLevel());
+                out.addProperty("hunger", p.getFoodData().getFoodLevel());
                 out.addProperty("x", p.getX());
                 out.addProperty("y", p.getY());
                 out.addProperty("z", p.getZ());
-                out.addProperty("yaw", p.getYaw());
-                out.addProperty("pitch", p.getPitch());
-                out.addProperty("onGround", p.isOnGround());
-                var mgr = MinecraftClient.getInstance().interactionManager;
+                out.addProperty("yaw", p.getYRot());
+                out.addProperty("pitch", p.getXRot());
+                out.addProperty("onGround", p.onGround());
+                var mgr = Minecraft.getInstance().gameMode;
                 if (mgr != null) {
-                    out.addProperty("gameMode", mgr.getCurrentGameMode().getName());
+                    out.addProperty("gameMode", mgr.getPlayerMode().getSerializedName());
                 }
-                if (p.getWorld() != null) {
-                    out.addProperty("dimension", p.getWorld().getRegistryKey().getValue().toString());
+                Level level = p.level();
+                if (level != null) {
+                    out.addProperty("dimension", level.dimension().identifier().toString());
                 }
 
                 // Main hand item
-                out.add("mainHandItem", serializer.serialize(p.getMainHandStack()));
+                out.add("mainHandItem", serializer.serialize(p.getMainHandItem()));
 
                 // Inventory slot count
-                out.addProperty("inventorySlots", p.getInventory().size());
+                out.addProperty("inventorySlots", p.getInventory().getContainerSize());
 
                 future.complete(out);
             } catch (Exception e) {
@@ -164,13 +168,13 @@ public class RequestHandler {
         Float pitch = p.has("pitch") ? p.get("pitch").getAsFloat() : null;
 
         CompletableFuture<Void> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                LocalPlayer player = Minecraft.getInstance().player;
                 if (player == null) throw new IllegalStateException("Not in a world");
-                player.setPosition(x, y, z);
-                if (yaw   != null) player.setYaw(yaw);
-                if (pitch != null) player.setPitch(pitch);
+                player.setPos(x, y, z);
+                if (yaw   != null) player.setYRot(yaw);
+                if (pitch != null) player.setXRot(pitch);
                 future.complete(null);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -182,23 +186,23 @@ public class RequestHandler {
 
     private JsonElement handlePlayerLookAt(JsonObject p) throws Exception {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                LocalPlayer player = Minecraft.getInstance().player;
                 if (player == null) throw new IllegalStateException("Not in a world");
 
                 if (p.has("targetX")) {
                     double tx = p.get("targetX").getAsDouble();
                     double ty = p.get("targetY").getAsDouble();
                     double tz = p.get("targetZ").getAsDouble();
-                    Vec3d diff = new Vec3d(tx - player.getX(), ty - (player.getY() + player.getEyeHeight(player.getPose())), tz - player.getZ()).normalize();
+                    Vec3 diff = new Vec3(tx - player.getX(), ty - player.getEyeY(), tz - player.getZ()).normalize();
                     double yaw   = Math.toDegrees(Math.atan2(-diff.x, diff.z));
                     double pitch = Math.toDegrees(-Math.asin(diff.y));
-                    player.setYaw((float) yaw);
-                    player.setPitch((float) pitch);
+                    player.setYRot((float) yaw);
+                    player.setXRot((float) pitch);
                 } else {
-                    if (p.has("yaw"))   player.setYaw(p.get("yaw").getAsFloat());
-                    if (p.has("pitch")) player.setPitch(p.get("pitch").getAsFloat());
+                    if (p.has("yaw"))   player.setYRot(p.get("yaw").getAsFloat());
+                    if (p.has("pitch")) player.setXRot(p.get("pitch").getAsFloat());
                 }
                 future.complete(null);
             } catch (Exception e) {
@@ -211,11 +215,11 @@ public class RequestHandler {
 
     private JsonElement handlePlayerJump() throws Exception {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                ClientPlayerEntity player = MinecraftClient.getInstance().player;
+                LocalPlayer player = Minecraft.getInstance().player;
                 if (player == null) throw new IllegalStateException("Not in a world");
-                if (player.isOnGround()) player.jump();
+                if (player.onGround()) player.jumpFromGround();
                 future.complete(null);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -232,13 +236,13 @@ public class RequestHandler {
         BlockPos pos = new BlockPos(x, y, z);
 
         CompletableFuture<String> future = new CompletableFuture<>();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
             try {
-                ClientPlayerEntity player = client.player;
-                ClientPlayerInteractionManager mgr = client.interactionManager;
+                LocalPlayer player = client.player;
+                MultiPlayerGameMode mgr = client.gameMode;
                 if (player == null || mgr == null) throw new IllegalStateException("Not in a world");
-                mgr.attackBlock(pos, Direction.UP);
+                mgr.startDestroyBlock(pos, Direction.UP);
                 future.complete("Block break initiated at " + pos);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -258,16 +262,20 @@ public class RequestHandler {
         Direction finalFace = face;
 
         CompletableFuture<String> future = new CompletableFuture<>();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
             try {
-                ClientPlayerEntity player = client.player;
-                ClientPlayerInteractionManager mgr = client.interactionManager;
+                LocalPlayer player = client.player;
+                MultiPlayerGameMode mgr = client.gameMode;
                 if (player == null || mgr == null) throw new IllegalStateException("Not in a world");
 
-                Vec3d hitVec = Vec3d.ofCenter(pos).add(Vec3d.of(finalFace.getVector()).multiply(0.5));
+                Vec3 hitVec = Vec3.atCenterOf(pos).add(
+                    finalFace.getStepX() * 0.5,
+                    finalFace.getStepY() * 0.5,
+                    finalFace.getStepZ() * 0.5
+                );
                 BlockHitResult hit = new BlockHitResult(hitVec, finalFace, pos, false);
-                mgr.interactBlock(player, Hand.MAIN_HAND, hit);
+                mgr.useItemOn(player, InteractionHand.MAIN_HAND, hit);
                 future.complete("Block place attempted at " + pos + " face=" + finalFace);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -283,16 +291,16 @@ public class RequestHandler {
         BlockPos pos = new BlockPos(x, y, z);
 
         CompletableFuture<String> future = new CompletableFuture<>();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
             try {
-                ClientPlayerEntity player = client.player;
-                ClientPlayerInteractionManager mgr = client.interactionManager;
+                LocalPlayer player = client.player;
+                MultiPlayerGameMode mgr = client.gameMode;
                 if (player == null || mgr == null) throw new IllegalStateException("Not in a world");
 
-                Vec3d hitVec = Vec3d.ofCenter(pos);
+                Vec3 hitVec = Vec3.atCenterOf(pos);
                 BlockHitResult hit = new BlockHitResult(hitVec, Direction.UP, pos, false);
-                mgr.interactBlock(player, Hand.MAIN_HAND, hit);
+                mgr.useItemOn(player, InteractionHand.MAIN_HAND, hit);
                 future.complete("Interacted with block at " + pos);
             } catch (Exception e) {
                 future.completeExceptionally(e);
@@ -310,9 +318,9 @@ public class RequestHandler {
         BlockPos pos = new BlockPos(x, y, z);
 
         CompletableFuture<JsonElement> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                World world = MinecraftClient.getInstance().world;
+                Level world = Minecraft.getInstance().level;
                 if (world == null) throw new IllegalStateException("Not in a world");
                 BlockState state = world.getBlockState(pos);
                 future.complete(serializer.serialize(state));
@@ -327,14 +335,14 @@ public class RequestHandler {
         double radius = p.has("radius") ? p.get("radius").getAsDouble() : 16.0;
 
         CompletableFuture<JsonElement> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
-                MinecraftClient client = MinecraftClient.getInstance();
-                ClientPlayerEntity player = client.player;
-                if (player == null || client.world == null) throw new IllegalStateException("Not in a world");
+                Minecraft client = Minecraft.getInstance();
+                LocalPlayer player = client.player;
+                if (player == null || client.level == null) throw new IllegalStateException("Not in a world");
 
-                Box box = player.getBoundingBox().expand(radius);
-                List<Entity> entities = client.world.getOtherEntities(player, box);
+                AABB box = player.getBoundingBox().inflate(radius);
+                List<Entity> entities = client.level.getEntities(player, box);
 
                 JsonArray arr = new JsonArray();
                 for (Entity e : entities) arr.add(serializer.serialize(e));
@@ -354,14 +362,13 @@ public class RequestHandler {
         CompletableFuture<String> future = new CompletableFuture<>();
 
         // Screenshots must be taken on the render thread
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
             java.nio.file.Path tmp = null;
             try {
-                var nativeImage = ScreenshotRecorder.takeScreenshot(client.getFramebuffer());
                 tmp = java.nio.file.Files.createTempFile("mcp-screenshot", ".png");
-                nativeImage.writeTo(tmp);
-                nativeImage.close();
+                // In 26.1.2 the API is grab(File target, RenderTarget framebuffer, Consumer<Component> callback)
+                Screenshot.grab(tmp.toFile(), client.getMainRenderTarget(), msg -> {});
                 byte[] bytes = java.nio.file.Files.readAllBytes(tmp);
                 String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
                 future.complete(base64);
@@ -407,7 +414,7 @@ public class RequestHandler {
         method.setAccessible(true);
 
         CompletableFuture<Object> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
                 future.complete(method.invoke(instance, argValues));
             } catch (Exception e) {
@@ -434,7 +441,7 @@ public class RequestHandler {
         Object instance = target != null ? registry.resolve(target) : null;
 
         CompletableFuture<Object> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
                 future.complete(field.get(instance));
             } catch (Exception e) {
@@ -463,7 +470,7 @@ public class RequestHandler {
         Object instance = target != null ? registry.resolve(target) : null;
 
         CompletableFuture<Void> future = new CompletableFuture<>();
-        MinecraftClient.getInstance().execute(() -> {
+        Minecraft.getInstance().execute(() -> {
             try {
                 field.set(instance, val);
                 future.complete(null);

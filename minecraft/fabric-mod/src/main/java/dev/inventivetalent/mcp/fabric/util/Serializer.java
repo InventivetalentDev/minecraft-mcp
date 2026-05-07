@@ -1,13 +1,13 @@
 package dev.inventivetalent.mcp.fabric.util;
 
 import com.google.gson.*;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -50,11 +50,11 @@ public class Serializer {
         }
 
         // Well-known Minecraft types
-        if (value instanceof Vec3d v) return serializeVec3d(v);
+        if (value instanceof Vec3 v) return serializeVec3(v);
         if (value instanceof BlockPos bp) return serializeBlockPos(bp);
         if (value instanceof BlockState bs) return serializeBlockState(bs);
         if (value instanceof ItemStack is) return serializeItemStack(is);
-        if (value instanceof ClientPlayerEntity p) return serializePlayer(p);
+        if (value instanceof LocalPlayer p) return serializePlayer(p);
         if (value instanceof Entity e) return serializeEntity(e);
 
         // Opaque reference
@@ -66,7 +66,7 @@ public class Serializer {
         return ref;
     }
 
-    private JsonObject serializeVec3d(Vec3d v) {
+    private JsonObject serializeVec3(Vec3 v) {
         JsonObject o = new JsonObject();
         o.addProperty("x", v.x);
         o.addProperty("y", v.y);
@@ -96,27 +96,27 @@ public class Serializer {
         return o;
     }
 
-    private JsonObject serializePlayer(ClientPlayerEntity p) {
+    private JsonObject serializePlayer(LocalPlayer p) {
         JsonObject o = new JsonObject();
         o.addProperty("name", p.getName().getString());
-        o.addProperty("uuid", p.getUuidAsString());
+        o.addProperty("uuid", p.getStringUUID());
         o.addProperty("health", p.getHealth());
-        o.addProperty("hunger", p.getHungerManager().getFoodLevel());
-        o.add("position", serializeVec3d(p.getPos()));
-        o.addProperty("yaw", p.getYaw());
-        o.addProperty("pitch", p.getPitch());
-        var mgr = MinecraftClient.getInstance().interactionManager;
+        o.addProperty("hunger", p.getFoodData().getFoodLevel());
+        o.add("position", serializeVec3(p.position()));
+        o.addProperty("yaw", p.getYRot());
+        o.addProperty("pitch", p.getXRot());
+        var mgr = Minecraft.getInstance().gameMode;
         if (mgr != null) {
-            o.addProperty("gameMode", mgr.getCurrentGameMode().getName());
+            o.addProperty("gameMode", mgr.getPlayerMode().getSerializedName());
         }
         return o;
     }
 
     private JsonObject serializeEntity(Entity e) {
         JsonObject o = new JsonObject();
-        o.addProperty("uuid", e.getUuidAsString());
+        o.addProperty("uuid", e.getStringUUID());
         o.addProperty("type", e.getType().toString());
-        o.add("position", serializeVec3d(e.getPos()));
+        o.add("position", serializeVec3(e.position()));
         return o;
     }
 
