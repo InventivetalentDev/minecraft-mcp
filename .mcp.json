@@ -1,15 +1,15 @@
 {
   "mcpServers": {
     "minecraft-paper": {
-      "command": "node",
-      "args": ["--import", "tsx/esm", "./packages/mcp-server-paper/src/index.ts"],
+      "command": "tsx",
+      "args": ["./packages/mcp-server-paper/src/index.ts"],
       "env": {
         "PAPER_WS_URL": "ws://localhost:25575"
       }
     },
     "minecraft-fabric": {
-      "command": "node",
-      "args": ["--import", "tsx/esm", "./packages/mcp-server-fabric/src/index.ts"],
+      "command": "tsx",
+      "args": ["./packages/mcp-server-fabric/src/index.ts"],
       "env": {
         "FABRIC_WS_URL": "ws://localhost:25576"
       }
