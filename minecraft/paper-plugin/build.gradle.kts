@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.gradleup.shadow") version "8.3.5"
+    id("com.gradleup.shadow") version "8.3.6"
 }
 
 group = property("group")!!
@@ -30,10 +30,10 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
-        relocate(
-            "org.java_websocket",
-            "dev.inventivetalent.mcp.paper.libs.websocket"
-        )
+        // Note: Paper plugins each get their own PluginClassLoader, so
+        // bundling org.java_websocket without relocation is safe — each
+        // plugin loads its own copy. Relocation in shadow 8.3.5 hits a
+        // bug with Java 21 invokedynamic string concatenation.
     }
     build {
         dependsOn(shadowJar)
