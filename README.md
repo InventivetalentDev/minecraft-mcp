@@ -52,6 +52,7 @@ The Minecraft side (plugin / mod) runs a local **WebSocket server**. The Node.js
 | Tool | Version |
 |------|---------|
 | Node.js | ≥ 20 |
+| tsx | any (`npm install -g tsx`) |
 | Java | 21 (Paper plugin) / 25 (Fabric mod – MC 26.1.2 ships Java 25 bytecode) |
 | Gradle | 8.8+ for the Paper plugin wrapper. The Fabric mod has its own checked-in wrapper pinned to 9.4. |
 
