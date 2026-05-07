@@ -14,7 +14,7 @@ minecraft-mcp/
 │   └── mcp-server-fabric/   MCP server (stdio) ↔ Fabric client mod
 └── minecraft/
     ├── paper-plugin/        Paper/Spigot plugin (Java 21, Gradle)
-    └── fabric-mod/          Fabric client mod (Java 21, Gradle, fabric-loom)
+    └── fabric-mod/          Fabric client mod for MC 26.1.2 (Java 25, Gradle 9.4, fabric-loom 1.16)
 ```
 
 ---
@@ -52,8 +52,8 @@ The Minecraft side (plugin / mod) runs a local **WebSocket server**. The Node.js
 | Tool | Version |
 |------|---------|
 | Node.js | ≥ 20 |
-| Java | 21 |
-| Gradle | 8.8+ (for bootstrapping wrappers) |
+| Java | 21 (Paper plugin) / 25 (Fabric mod – MC 26.1.2 ships Java 25 bytecode) |
+| Gradle | 8.8+ for the Paper plugin wrapper. The Fabric mod has its own checked-in wrapper pinned to 9.4. |
 
 ### 1. Install Node packages
 
@@ -76,8 +76,7 @@ Copy the jar into your Paper server's `plugins/` directory and start the server.
 
 ```bash
 cd minecraft/fabric-mod
-gradle wrapper --gradle-version 8.8   # once only
-./gradlew build
+./gradlew build       # uses the bundled wrapper (Gradle 9.4) – needs Java 25 on JAVA_HOME
 # Output: build/libs/minecraft-mcp-fabric-0.1.0.jar
 ```
 
