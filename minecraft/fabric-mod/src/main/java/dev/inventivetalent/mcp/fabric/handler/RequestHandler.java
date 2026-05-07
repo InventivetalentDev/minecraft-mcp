@@ -364,21 +364,23 @@ public class RequestHandler {
         // Screenshots must be taken on the render thread
         Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
-            java.nio.file.Path tmp = null;
-            try {
-                tmp = java.nio.file.Files.createTempFile("mcp-screenshot", ".png");
-                // In 26.1.2 the API is grab(File target, RenderTarget framebuffer, Consumer<Component> callback)
-                Screenshot.grab(tmp.toFile(), client.getMainRenderTarget(), msg -> {});
-                byte[] bytes = java.nio.file.Files.readAllBytes(tmp);
-                String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
-                future.complete(base64);
-            } catch (Exception e) {
-                future.completeExceptionally(e);
-            } finally {
-                if (tmp != null) {
-                    try { java.nio.file.Files.deleteIfExists(tmp); } catch (Exception ignored) {}
+            // takeScreenshot delivers a NativeImage we can write to a temp file as PNG
+            Screenshot.takeScreenshot(client.getMainRenderTarget(), image -> {
+                java.nio.file.Path tmp = null;
+                try {
+                    tmp = java.nio.file.Files.createTempFile("mcp-screenshot", ".png");
+                    image.writeToFile(tmp);
+                    byte[] bytes = java.nio.file.Files.readAllBytes(tmp);
+                    future.complete(java.util.Base64.getEncoder().encodeToString(bytes));
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                } finally {
+                    image.close();
+                    if (tmp != null) {
+                        try { java.nio.file.Files.deleteIfExists(tmp); } catch (Exception ignored) {}
+                    }
                 }
-            }
+            });
         });
 
         String png = future.get(10, TimeUnit.SECONDS);
