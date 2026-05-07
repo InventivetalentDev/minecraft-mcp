@@ -21,6 +21,9 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
+val pluginVersion: String = project.version.toString()
+val mcVersionString: String = project.property("mcVersion").toString()
+
 tasks {
     compileJava {
         options.encoding = "UTF-8"
@@ -37,8 +40,8 @@ tasks {
     }
     processResources {
         val props = mapOf(
-            "version" to project.version,
-            "mcVersion" to property("mcVersion")
+            "version" to pluginVersion,
+            "mcVersion" to mcVersionString
         )
         inputs.properties(props)
         filesMatching("plugin.yml") { expand(props) }

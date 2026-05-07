@@ -27,6 +27,11 @@ java {
     withSourcesJar()
 }
 
+val modVersion: String = project.version.toString()
+val mcVer: String = project.property("minecraft_version").toString()
+val loaderVer: String = project.property("loader_version").toString()
+val fabricVer: String = project.property("fabric_version").toString()
+
 tasks {
     compileJava {
         options.encoding = "UTF-8"
@@ -34,10 +39,10 @@ tasks {
     }
     processResources {
         val props = mapOf(
-            "version"           to project.version,
-            "minecraft_version" to property("minecraft_version"),
-            "loader_version"    to property("loader_version"),
-            "fabric_version"    to property("fabric_version")
+            "version"           to modVersion,
+            "minecraft_version" to mcVer,
+            "loader_version"    to loaderVer,
+            "fabric_version"    to fabricVer
         )
         inputs.properties(props)
         filesMatching("fabric.mod.json") { expand(props) }
