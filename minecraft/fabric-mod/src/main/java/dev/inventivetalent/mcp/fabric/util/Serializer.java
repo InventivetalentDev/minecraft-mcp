@@ -2,6 +2,7 @@ package dev.inventivetalent.mcp.fabric.util;
 
 import com.google.gson.*;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
@@ -104,7 +105,10 @@ public class Serializer {
         o.add("position", serializeVec3d(p.getPos()));
         o.addProperty("yaw", p.getYaw());
         o.addProperty("pitch", p.getPitch());
-        o.addProperty("gameMode", p.interactionManager.getCurrentGameMode().getName());
+        var mgr = MinecraftClient.getInstance().interactionManager;
+        if (mgr != null) {
+            o.addProperty("gameMode", mgr.getCurrentGameMode().getName());
+        }
         return o;
     }
 

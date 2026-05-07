@@ -222,12 +222,14 @@ public class RequestHandler {
         return success(future.get(10, TimeUnit.SECONDS));
     }
 
+    @SuppressWarnings("removal")
     private JsonElement handleServerRestart(JsonObject p) {
         boolean stopOnly = p.has("stopOnly") && p.get("stopOnly").getAsBoolean();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (stopOnly) {
                 Bukkit.shutdown();
             } else {
+                // Requires restart-script in paper.yml; otherwise behaves as shutdown.
                 Bukkit.spigot().restart();
             }
         }, 20L);

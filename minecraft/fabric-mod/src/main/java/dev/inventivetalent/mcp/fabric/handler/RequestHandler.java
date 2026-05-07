@@ -17,7 +17,6 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -135,8 +134,10 @@ public class RequestHandler {
                 out.addProperty("yaw", p.getYaw());
                 out.addProperty("pitch", p.getPitch());
                 out.addProperty("onGround", p.isOnGround());
-                out.addProperty("gameMode",
-                        p.interactionManager.getCurrentGameMode().getName());
+                var mgr = MinecraftClient.getInstance().interactionManager;
+                if (mgr != null) {
+                    out.addProperty("gameMode", mgr.getCurrentGameMode().getName());
+                }
                 if (p.getWorld() != null) {
                     out.addProperty("dimension", p.getWorld().getRegistryKey().getValue().toString());
                 }
@@ -357,10 +358,9 @@ public class RequestHandler {
         client.execute(() -> {
             try {
                 var nativeImage = ScreenshotRecorder.takeScreenshot(client.getFramebuffer());
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                nativeImage.writeTo(baos);
+                byte[] bytes = nativeImage.getBytes();
                 nativeImage.close();
-                String base64 = java.util.Base64.getEncoder().encodeToString(baos.toByteArray());
+                String base64 = java.util.Base64.getEncoder().encodeToString(bytes);
                 future.complete(base64);
             } catch (Exception e) {
                 future.completeExceptionally(e);

@@ -68,6 +68,11 @@ public class CapturingCommandSender implements CommandSender {
     }
 
     @Override
+    public @NotNull Component name() {
+        return Component.text("MCPConsole");
+    }
+
+    @Override
     public boolean isPermissionSet(@NotNull String name) { return true; }
 
     @Override
