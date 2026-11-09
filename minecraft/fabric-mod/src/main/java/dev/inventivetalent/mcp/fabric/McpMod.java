@@ -5,6 +5,7 @@ import dev.inventivetalent.mcp.fabric.util.PackageFilter;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +42,23 @@ public class McpMod implements ClientModInitializer {
         PackageFilter filter = new PackageFilter(allowed, blocked);
 
         wsServer = new McpWebSocketServer(new InetSocketAddress(host, port), filter, maxRefs);
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> stopWebSocketServer());
         try {
             wsServer.start();
             LOGGER.info("[MCP] WebSocket server started on {}:{}", host, port);
         } catch (Exception e) {
             LOGGER.error("[MCP] Failed to start WebSocket server", e);
+        }
+    }
+
+    private void stopWebSocketServer() {
+        try {
+            // Close connections and wait up to two seconds for the selector thread.
+            wsServer.stop(2000);
+            LOGGER.info("[MCP] WebSocket server stopped");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("[MCP] Interrupted while stopping WebSocket server", e);
         }
     }
 
